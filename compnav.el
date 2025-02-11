@@ -33,12 +33,12 @@
 ;;; Code:
 
 ;; Update .z file.
-(defun compnav-add-pwd ()
+(defun compnav--add-pwd ()
   ;; Don't use `shell-command' to avoid "(Shell command succeeded with
   ;; no output)" messages.
   (shell-command-to-string "ruby \"$COMPNAV_DIR/z.rb\" --add \"$PWD\""))
-(add-hook 'eshell-directory-change-hook 'compnav-add-pwd)
-(add-hook 'eshell-mode-hook 'compnav-add-pwd)
+(add-hook 'eshell-directory-change-hook 'compnav--add-pwd)
+(add-hook 'eshell-mode-hook 'compnav--add-pwd)
 
 ;; TODO: implement start-accept.
 (defun compnav--select (prompt collection args history reverse &optional start-accept)
@@ -77,6 +77,7 @@ ARGS is used as the initial input to filter matches."
          ;; TODO: move command to compnav-select.
          (output (shell-command-to-string "ruby \"$COMPNAV_DIR/up.rb\""))
          (dirs (string-split (string-trim output) "\n" t))
+         ;; TODO: Remove this conditional once start-accept works.
          (dir (if (null args)
                   (car dirs)
                 (compnav--select "up: " dirs args 'compnav-up-history nil t))))
@@ -85,13 +86,25 @@ ARGS is used as the initial input to filter matches."
 
 (defvar compnav-z-history nil)
 (defun eshell/z (&rest args)
-  "Go to a recent directory.
+  "Jump to a recent directory.
 
 ARGS is used as the initial input to filter matches."
   (let* (
          (output (shell-command-to-string "ruby \"$COMPNAV_DIR/z.rb\""))
          (dirs (string-split (string-trim output) "\n" t))
-         (dir (compnav--select "up: " dirs args 'compnav-z-history t)))
+         (dir (compnav--select "z: " dirs args 'compnav-z-history t)))
+    (when dir
+      (eshell/cd dir))))
+
+(defvar compnav-h-history nil)
+(defun eshell/h (&rest args)
+  "Jump to a repo.
+
+ARGS is used as the initial input to filter matches."
+  (let* (
+         (output (shell-command-to-string "ruby \"$COMPNAV_DIR/h.rb\""))
+         (dirs (string-split (string-trim output) "\n" t))
+         (dir (compnav--select "h: " dirs args 'compnav-h-history t)))
     (when dir
       (eshell/cd dir))))
 
